@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1208">
+<meta name="description" content="Speichere Instagram-Rezepte automatisch mit KI">
+<title>ReelRezepte</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --ink:#1a1208; --cream:#f5f0e8; --warm:#e8dcc8;
+  --gold:#c8932a; --gold-light:#e8b84b; --rust:#b85c2a;
+  --sage:#6b7c5a; --paper:#faf7f2; --shadow:rgba(26,18,8,0.15); --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1000;opacity:.35}
+
+/* LOGIN */
+#loginScreen{position:fixed;inset:0;z-index:500;background:linear-gradient(160deg,var(--ink) 0%,#2d1f0a 60%,#1a1208 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center}
+.login-logo{font-family:'Playfair Display',serif;font-size:42px;color:var(--gold-light);letter-spacing:-1px;margin-bottom:8px}
+.login-logo span{color:var(--cream);font-style:italic}
+.login-sub{color:rgba(245,240,232,0.5);font-size:15px;margin-bottom:48px;line-height:1.5}
+.login-icon{font-size:64px;margin-bottom:24px}
+.btn-google{display:flex;align-items:center;gap:12px;padding:16px 28px;border-radius:14px;border:none;background:white;color:#1a1208;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:500;cursor:pointer;width:100%;max-width:320px;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.3);transition:transform 0.2s,opacity 0.2s}
+.btn-google:hover:not(:disabled){transform:translateY(-2px)}
+.btn-google:disabled{opacity:.6;cursor:not-allowed}
+.login-hint{color:rgba(245,240,232,0.3);font-size:12px;margin-top:20px}
+
+/* HEADER */
+header{background:var(--ink);padding:16px 20px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{font-family:'Playfair Display',serif;font-size:20px;color:var(--gold-light);letter-spacing:-.5px;flex-shrink:0}
+.logo span{color:var(--cream);font-style:italic}
+.header-right{display:flex;align-items:center;gap:8px}
+#userBadge{display:flex;align-items:center;gap:8px}
+.btn-icon{width:34px;height:34px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.15);background:transparent;color:var(--cream);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .2s}
+.btn-icon:hover{background:rgba(255,255,255,.1);border-color:var(--gold)}
+#syncDot{width:8px;height:8px;border-radius:50%;background:var(--sage);flex-shrink:0;transition:background .3s}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* SEARCH */
+.search-bar{background:var(--ink);padding:0 16px;max-height:0;overflow:hidden;transition:max-height .3s,padding .3s}
+.search-bar.open{max-height:70px;padding:0 16px 14px}
+.search-input{width:100%;padding:11px 16px;border-radius:10px;border:1.5px solid rgba(200,147,42,0.3);background:rgba(255,255,255,.08);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;outline:none}
+.search-input::placeholder{color:rgba(245,240,232,.3)}
+.search-input:focus{border-color:var(--gold)}
+
+/* HERO */
+.hero{background:linear-gradient(160deg,var(--ink) 0%,#2d1f0a 100%);padding:28px 24px 36px;position:relative;overflow:hidden}
+.hero::after{content:'🍝';position:absolute;font-size:100px;right:-16px;bottom:-16px;opacity:.07;transform:rotate(-15deg)}
+.hero h2{font-family:'Playfair Display',serif;font-size:26px;color:var(--cream);line-height:1.2;margin-bottom:4px}
+.hero h2 em{color:var(--gold-light);font-style:italic}
+.hero p{color:rgba(245,240,232,.5);font-size:13px;margin-bottom:18px;font-weight:300}
+.input-row{display:flex;gap:10px;align-items:stretch}
+.url-input{flex:1;padding:13px 15px;border-radius:12px;border:1.5px solid rgba(200,147,42,0.3);background:rgba(255,255,255,.07);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
+.url-input::placeholder{color:rgba(245,240,232,.3)}
+.url-input:focus{border-color:var(--gold)}
+.btn-primary{padding:13px 18px;border-radius:12px;border:none;background:var(--gold);color:var(--ink);font-family:'DM Sans',sans-serif;font-weight:500;font-size:14px;cursor:pointer;white-space:nowrap;transition:all .2s;display:flex;align-items:center;gap:6px}
+.btn-primary:hover:not(:disabled){background:var(--gold-light);transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed}
+.loading-bar{height:3px;background:linear-gradient(90deg,var(--gold),var(--gold-light),var(--gold));background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:2px;margin-top:14px;display:none}
+.loading-bar.active{display:block}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.loading-text{color:rgba(245,240,232,.5);font-size:12px;margin-top:6px;display:none;animation:pulse 1.5s ease-in-out infinite}
+.loading-text.active{display:block}
+.status-banner{border-radius:8px;padding:10px 14px;font-size:12px;display:flex;align-items:flex-start;gap:8px;border:1px solid}
+.status-banner.info{background:rgba(200,147,42,.12);border-color:rgba(200,147,42,.3);color:var(--gold-light)}
+.status-banner.error{background:rgba(184,92,42,.15);border-color:rgba(184,92,42,.4);color:#f0956a}
+.status-banner.success{background:rgba(107,124,90,.15);border-color:rgba(107,124,90,.4);color:#a8c490}
+
+/* FILTERS */
+.filter-bar{padding:14px 20px 0;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-chip{padding:6px 13px;border-radius:20px;border:1.5px solid var(--warm);background:transparent;color:var(--ink);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;transition:all .2s}
+.filter-chip.active,.filter-chip:hover{background:var(--ink);border-color:var(--ink);color:var(--cream)}
+
+/* SECTION */
+.section-header{padding:20px 20px 4px;display:flex;align-items:baseline;justify-content:space-between}
+.section-title{font-family:'Playfair Display',serif;font-size:20px}
+.section-count{font-size:12px;color:rgba(26,18,8,.4)}
+
+/* GRID */
+.recipe-grid{padding:12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.recipe-card{background:white;border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 12px var(--shadow);cursor:pointer;transition:transform .2s,box-shadow .2s;animation:cardIn .4s ease both;position:relative}
+.recipe-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px var(--shadow)}
+@keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.card-thumb{aspect-ratio:4/3;background:var(--warm);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:40px}
+.card-thumb img{width:100%;height:100%;object-fit:cover;position:absolute}
+.card-badge{position:absolute;top:8px;right:8px;background:var(--ink);color:var(--gold-light);font-size:10px;font-weight:500;padding:3px 8px;border-radius:10px}
+.card-delete{position:absolute;top:8px;left:8px;width:26px;height:26px;border-radius:50%;background:rgba(26,18,8,.65);border:none;color:#f0956a;font-size:12px;cursor:pointer;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.recipe-card:hover .card-delete{display:flex}
+.card-body{padding:10px 12px 12px}
+.card-title{font-family:'Playfair Display',serif;font-size:14px;line-height:1.3;color:var(--ink);margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-meta{display:flex;gap:8px;font-size:11px;color:rgba(26,18,8,.45)}
+.card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.tag{background:var(--cream);color:var(--sage);font-size:10px;padding:2px 7px;border-radius:6px;font-weight:500}
+.empty-state{padding:48px 24px;text-align:center}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-state h3{font-family:'Playfair Display',serif;font-size:20px;margin-bottom:8px}
+.empty-state p{color:rgba(26,18,8,.45);font-size:14px;line-height:1.5}
+
+/* DETAIL MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,18,8,.7);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(4px)}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal-sheet{background:var(--paper);border-radius:24px 24px 0 0;width:100%;max-height:92vh;overflow-y:auto;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom,20px)}
+.modal-overlay.open .modal-sheet{transform:translateY(0)}
+.modal-handle{width:36px;height:4px;background:var(--warm);border-radius:2px;margin:12px auto 0}
+.modal-hero{height:220px;background:var(--warm);display:flex;align-items:center;justify-content:center;font-size:72px;position:relative;margin-top:8px;overflow:hidden}
+.modal-hero img{width:100%;height:100%;object-fit:cover;position:absolute}
+.modal-source-badge{position:absolute;bottom:12px;left:12px;background:rgba(26,18,8,.75);color:var(--cream);font-size:11px;padding:4px 10px;border-radius:12px;display:flex;align-items:center;gap:5px;backdrop-filter:blur(4px)}
+.modal-close{position:absolute;top:12px;right:12px;width:32px;height:32px;background:rgba(26,18,8,.6);border:none;border-radius:50%;color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-body{padding:20px 24px}
+.modal-title{font-family:'Playfair Display',serif;font-size:24px;line-height:1.2;color:var(--ink);margin-bottom:12px}
+.modal-stats{display:flex;gap:16px;padding:12px 0;border-top:1px solid var(--warm);border-bottom:1px solid var(--warm);margin-bottom:20px}
+.stat-item{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1}
+.stat-value{font-size:16px;font-weight:500;color:var(--gold)}
+.stat-label{font-size:10px;color:rgba(26,18,8,.45);text-transform:uppercase;letter-spacing:.5px}
+.section-label{font-family:'Playfair Display',serif;font-size:16px;color:var(--ink);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--warm)}
+.ingredients-list{list-style:none;margin-bottom:24px}
+.ingredients-list li{padding:8px 0;border-bottom:1px solid rgba(232,220,200,.5);font-size:14px;display:flex;align-items:center;gap:10px;color:var(--ink)}
+.ingredients-list li::before{content:'';width:6px;height:6px;background:var(--gold);border-radius:50%;flex-shrink:0}
+.steps-list{list-style:none;margin-bottom:24px}
+.steps-list li{display:flex;gap:14px;margin-bottom:16px;font-size:14px;line-height:1.5;color:rgba(26,18,8,.8)}
+.step-num{width:26px;height:26px;background:var(--ink);color:var(--gold-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;margin-top:1px}
+.modal-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
+.modal-tag{background:var(--cream);border:1px solid var(--warm);color:var(--sage);font-size:12px;padding:4px 10px;border-radius:10px;font-weight:500}
+.btn-open-reel{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);border:none;color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:opacity .2s}
+.btn-open-reel:hover{opacity:.9}
+
+/* ADD MODAL */
+.add-modal-overlay{position:fixed;inset:0;background:rgba(26,18,8,.7);z-index:300;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(4px)}
+.add-modal-overlay.open{opacity:1;pointer-events:all}
+.add-modal-sheet{background:var(--paper);border-radius:24px 24px 0 0;width:100%;padding:20px 24px 40px;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1)}
+.add-modal-overlay.open .add-modal-sheet{transform:translateY(0)}
+.add-modal-title{font-family:'Playfair Display',serif;font-size:20px;margin-bottom:4px}
+.add-modal-sub{font-size:13px;color:rgba(26,18,8,.45);margin-bottom:20px}
+.add-url-input{width:100%;padding:14px 16px;border-radius:12px;border:1.5px solid var(--warm);background:white;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;margin-bottom:12px;transition:border-color .2s}
+.add-url-input:focus{border-color:var(--gold)}
+.add-actions{display:flex;gap:10px}
+.btn-secondary{flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--warm);background:transparent;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;color:var(--ink)}
+.add-status{margin-top:12px}
+
+/* TOAST */
+.toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--cream);padding:12px 20px;border-radius:24px;font-size:14px;z-index:500;transition:transform .3s;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--warm);display:flex;padding:8px 0 env(safe-area-inset-bottom,8px);z-index:99}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;cursor:pointer;color:rgba(26,18,8,.35);font-size:10px;border:none;background:none;font-family:'DM Sans',sans-serif;transition:color .2s}
+.nav-item.active{color:var(--gold)}
+.nav-item svg{width:22px;height:22px}
+.nav-add{width:48px;height:48px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:-20px;border:3px solid white;box-shadow:0 4px 16px rgba(200,147,42,.4)}
+.nav-add svg{width:22px;height:22px;color:var(--ink)}
+main{padding:0 0 100px}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div id="loginScreen" style="display:flex">
+  <div class="login-icon">🍝</div>
+  <div class="login-logo">Reel<span>Rezepte</span></div>
+  <div class="login-sub">Dein persönliches Kochbuch.<br>Auf allen Geräten. Immer synchron.</div>
+  <button class="btn-google" id="loginBtn" onclick="window._signIn && window._signIn()">
+    <svg width="20" height="20" viewBox="0 0 24 24">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+    </svg>
+    Mit Google anmelden
+  </button>
+  <div class="login-hint">Deine Rezepte werden sicher in<br>deinem persönlichen Konto gespeichert.</div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="appScreen" style="display:none">
+  <header>
+    <div class="logo">Reel<span>Rezepte</span></div>
+    <div class="header-right">
+      <div id="syncDot" title="Sync-Status"></div>
+      <button class="btn-icon" onclick="window._toggleSearch && window._toggleSearch()" title="Suchen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+      <div id="userBadge"></div>
+    </div>
+  </header>
+
+  <div class="search-bar" id="searchBar">
+    <input class="search-input" id="searchInput" placeholder="Rezept, Zutat, Tag…"
+      oninput="window._onSearch && window._onSearch(this.value)">
+  </div>
+
+  <div class="hero">
+    <h2>Reel gesehen,<br><em>Rezept gespeichert.</em></h2>
+    <p>Instagram-Link einfügen → KI extrahiert das Rezept automatisch</p>
+    <div class="input-row">
+      <input type="url" class="url-input" id="heroUrl"
+        placeholder="instagram.com/reel/…"
+        oninput="window._heroInput && window._heroInput(this.value)"
+        onkeydown="if(event.key==='Enter') window._extractHero && window._extractHero()">
+      <button class="btn-primary" id="heroBtn" onclick="window._extractHero && window._extractHero()" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        Holen
+      </button>
+    </div>
+    <div class="loading-bar" id="loadingBar"></div>
+    <div class="loading-text" id="loadingText">✨ KI liest das Reel…</div>
+    <div id="heroBanner"></div>
+  </div>
+
+  <div class="filter-bar">
+    <button class="filter-chip active" onclick="window._filter && window._filter('all',this)">Alle</button>
+    <button class="filter-chip" onclick="window._filter && window._filter('pasta',this)">🍝 Pasta</button>
+    <button class="filter-chip" onclick="window._filter && window._filter('fleisch',this)">🥩 Fleisch</button>
+    <button class="filter-chip" onclick="window._filter && window._filter('vegetarisch',this)">🥦 Vegetarisch</button>
+    <button class="filter-chip" onclick="window._filter && window._filter('vegan',this)">🌱 Vegan</button>
+    <button class="filter-chip" onclick="window._filter && window._filter('backen',this)">🍰 Backen</button>
+    <button class="filter-chip" onclick="window._filter && window._filter('asiatisch',this)">🍜 Asiatisch</button>
+    <button class="filter-chip" onclick="window._filter && window._filter('fisch',this)">🐟 Fisch</button>
+  </div>
+
+  <main>
+    <div class="section-header">
+      <div class="section-title">Meine Rezepte</div>
+      <div class="section-count" id="recipeCount">–</div>
+    </div>
+    <div class="recipe-grid" id="recipeGrid"></div>
+    <div id="emptyState" class="empty-state" style="display:none">
+      <div class="empty-icon">🍳</div>
+      <h3>Noch keine Rezepte</h3>
+      <p>Füge deinen ersten Instagram-Link ein<br>und lass die KI das Rezept extrahieren.</p>
+    </div>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Rezepte
+    </button>
+    <div style="flex:.4"></div>
+    <button class="nav-item" style="flex:0">
+      <div class="nav-add" onclick="window._openAdd && window._openAdd()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+    </button>
+    <div style="flex:.4"></div>
+    <button class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Profil
+    </button>
+  </nav>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal" onclick="if(event.target.id==='detailModal') window._closeDetail && window._closeDetail()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-hero" id="modalHero"><button class="modal-close" onclick="window._closeDetail && window._closeDetail()">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="add-modal-overlay" id="addModal" onclick="if(event.target.id==='addModal') window._closeAdd && window._closeAdd()">
+  <div class="add-modal-sheet">
+    <div class="add-modal-title">Rezept hinzufügen</div>
+    <div class="add-modal-sub">Instagram Reel oder TikTok-Link einfügen</div>
+    <input type="url" class="add-url-input" id="addUrl"
+      placeholder="https://instagram.com/reel/…"
+      oninput="window._addInput && window._addInput(this.value)"
+      onkeydown="if(event.key==='Enter') window._extractModal && window._extractModal()">
+    <div class="add-actions">
+      <button class="btn-secondary" onclick="window._closeAdd && window._closeAdd()">Abbrechen</button>
+      <button class="btn-primary" id="addBtn" onclick="window._extractModal && window._extractModal()" disabled style="flex:2">
+        ✨ Rezept extrahieren
+      </button>
+    </div>
+    <div class="add-status" id="addStatus"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════════════════════════
+     FIREBASE MODULE SCRIPT
+     Muss type="module" sein für ES-Module-Imports.
+     Alle window._xxx Bridges verbinden HTML-onclick mit dem Modul.
+══════════════════════════════════════════════════════════ -->
+<script type="module">
+import { initializeApp }            from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+                                    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, doc, addDoc, deleteDoc,
+         onSnapshot, query, orderBy, serverTimestamp }
+                                    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ════════════════════════════════════════════════════
+// ⚠️  HIER DEINE FIREBASE-WERTE EINTRAGEN
+//     Firebase Console → Projekteinstellungen → Web-App
+// ════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyBzlt1dqY5128ZYwN8lr1LRaiGLNmk2rYk",
+  authDomain:        "rezepte-a91e2.firebaseapp.com",
+  projectId:         "rezepte-a91e2",
+  storageBucket:     "rezepte-a91e2.firebasestorage.app",
+  messagingSenderId: "498684581573",
+  appId:             "1:498684581573:web:690174538e220314ce82ac"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════
+let currentUser      = null;
+let recipes          = [];
+let unsubSnapshot    = null;
+let activeFilter     = 'all';
+let searchQuery      = '';
+let searchOpen       = false;
+
+const STORAGE_KEY = 'reelrezepte_v2';
+const API_URL     = '/api/extract';
+
+// ════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════
+onAuthStateChanged(auth, user => {
+  currentUser = user;
+  if (user) {
+    showApp();
+    renderUserBadge(user);
+    startSync(user.uid);
+  } else {
+    stopSync();
+    recipes = [];
+    showLoginScreen();
+  }
+});
+
+window._signIn = async () => {
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'Anmelden…';
+  try {
+    await signInWithPopup(auth, new GoogleAuthProvider());
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Mit Google anmelden';
+    toast('❌ Login fehlgeschlagen');
+  }
+};
+
+window._signOut = async () => { await signOut(auth); toast('👋 Abgemeldet'); };
+
+// ════════════════════════════════════════════════════
+// FIRESTORE REALTIME SYNC
+// ════════════════════════════════════════════════════
+const recipesCol = uid => collection(db, 'users', uid, 'recipes');
+
+function startSync(uid) {
+  stopSync();
+  syncDot('sync');
+  const q = query(recipesCol(uid), orderBy('savedAt', 'desc'));
+  unsubSnapshot = onSnapshot(q,
+    snap => {
+      recipes = snap.docs.map(d => ({ ...d.data(), _fid: d.id }));
+      // Firestore Timestamp → ISO String für einheitliche Darstellung
+      recipes.forEach(r => {
+        if (r.savedAt?.toDate) r.savedAt = r.savedAt.toDate().toISOString();
+      });
+      saveLocal();
+      renderGrid();
+      syncDot('ok');
+    },
+    err => {
+      console.error('Firestore:', err);
+      syncDot('error');
+      loadLocal(); renderGrid();
+    }
+  );
+}
+
+function stopSync() { unsubSnapshot?.(); unsubSnapshot = null; }
+
+async function addRecipe(recipe) {
+  if (!currentUser) throw new Error('Nicht eingeloggt');
+  // Optimistic update: sofort lokal anzeigen
+  recipes.unshift({ ...recipe, _fid: null });
+  saveLocal(); renderGrid();
+  // Dann Firestore
+  const ref = await addDoc(recipesCol(currentUser.uid), {
+    ...recipe, userId: currentUser.uid, savedAt: serverTimestamp()
+  });
+  const i = recipes.findIndex(r => r.id === recipe.id && !r._fid);
+  if (i > -1) { recipes[i]._fid = ref.id; saveLocal(); }
+}
+
+async function removeRecipe(localId, fid) {
+  recipes = recipes.filter(r => r.id !== localId);
+  saveLocal(); renderGrid();
+  if (fid && currentUser) {
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'recipes', fid));
+  }
+}
+
+// ════════════════════════════════════════════════════
+// LOCAL STORAGE
+// ════════════════════════════════════════════════════
+function loadLocal() {
+  try { recipes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { recipes = []; }
+}
+function saveLocal() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
+}
+
+// ════════════════════════════════════════════════════
+// API
+// ════════════════════════════════════════════════════
+async function callExtract(url) {
+  const res  = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url}) });
+  const data = await res.json();
+  if (!res.ok) { const e = new Error(data.error||`Fehler ${res.status}`); e.code=data.code; throw e; }
+  return data.recipe;
+}
+
+// ════════════════════════════════════════════════════
+// EXTRACT FLOWS
+// ════════════════════════════════════════════════════
+window._heroInput = v => { document.getElementById('heroBtn').disabled = !v.trim(); };
+window._addInput  = v => { document.getElementById('addBtn').disabled  = !v.trim(); };
+
+window._extractHero = async () => {
+  if (!currentUser) { toast('⚠️ Bitte erst einloggen'); return; }
+  const inp = document.getElementById('heroUrl');
+  const url = inp.value.trim(); if (!url) return;
+  setLoading(true); setBanner(null);
+  try {
+    const r = await callExtract(url);
+    await addRecipe(r);
+    inp.value = ''; document.getElementById('heroBtn').disabled = true;
+    setBanner({ type:'success', msg:`✅ "${r.title}" gespeichert!` });
+  } catch(e) { setBanner({ type:'error', msg:`❌ ${e.message}` }); }
+  finally    { setLoading(false); }
+};
+
+window._extractModal = async () => {
+  if (!currentUser) { closeAdd(); toast('⚠️ Bitte erst einloggen'); return; }
+  const inp = document.getElementById('addUrl');
+  const url = inp.value.trim(); if (!url) return;
+  const btn = document.getElementById('addBtn');
+  btn.disabled=true; btn.textContent='⏳ Wird analysiert…'; setAddStatus(null);
+  try {
+    const r = await callExtract(url);
+    await addRecipe(r);
+    inp.value=''; closeAdd();
+    toast(`✅ "${r.title}" gespeichert!`);
+  } catch(e) {
+    setAddStatus({ type:'error', msg:`❌ ${e.message}` });
+    btn.disabled=false; btn.textContent='✨ Rezept extrahieren';
+  }
+};
+
+window._deleteRecipe = async (localId, fid, ev) => {
+  ev.stopPropagation();
+  if (!confirm('Rezept löschen?')) return;
+  try { await removeRecipe(localId, fid); toast('🗑 Gelöscht'); }
+  catch { toast('❌ Fehler beim Löschen'); }
+};
+
+// ════════════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════════════
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getFiltered() {
+  let list = recipes;
+  if (activeFilter !== 'all') list = list.filter(r => r.category===activeFilter || (r.tags||[]).includes(activeFilter));
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    list = list.filter(r =>
+      r.title?.toLowerCase().includes(q) ||
+      (r.tags||[]).some(t=>t.toLowerCase().includes(q)) ||
+      (r.zutaten||[]).some(z=>z.toLowerCase().includes(q))
+    );
+  }
+  return list;
+}
+
+function renderGrid() {
+  const grid  = document.getElementById('recipeGrid');
+  const empty = document.getElementById('emptyState');
+  const count = document.getElementById('recipeCount');
+  const list  = getFiltered();
+
+  count.textContent = list.length + ' Rezept' + (list.length!==1 ? 'e' : '');
+  if (list.length === 0) { grid.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display = 'none';
+
+  grid.innerHTML = list.map((r,i) => `
+    <div class="recipe-card" onclick="window._openDetail('${esc(r._fid||r.id)}')" style="animation-delay:${i*.05}s">
+      <div class="card-thumb">
+        ${r.thumbnailUrl ? `<img src="${esc(r.thumbnailUrl)}" alt="${esc(r.title)}" loading="lazy">` : (r.emoji||'🍽️')}
+        <div class="card-badge">${esc(r.dauer||'?')}</div>
+        <button class="card-delete"
+          onclick="window._deleteRecipe(${JSON.stringify(r.id)},${JSON.stringify(r._fid)},event)"
+          title="Löschen">✕</button>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${esc(r.title)}</div>
+        <div class="card-meta"><span>👤 ${esc(r.portionen||'?')}</span><span>📊 ${esc(r.schwierigkeit||'?')}</span></div>
+        <div class="card-tags">${(r.tags||[]).slice(0,2).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+window._filter = (cat, btn) => {
+  activeFilter = cat;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid();
+};
+
+window._onSearch = v => { searchQuery=v.trim(); renderGrid(); };
+
+window._toggleSearch = () => {
+  searchOpen = !searchOpen;
+  document.getElementById('searchBar').classList.toggle('open', searchOpen);
+  if (searchOpen) setTimeout(()=>document.getElementById('searchInput').focus(), 300);
+  else { searchQuery=''; document.getElementById('searchInput').value=''; renderGrid(); }
+};
+
+// ════════════════════════════════════════════════════
+// DETAIL MODAL
+// ════════════════════════════════════════════════════
+window._openDetail = id => {
+  const r = recipes.find(x => x._fid===id || String(x.id)===String(id));
+  if (!r) return;
+
+  document.getElementById('modalHero').innerHTML = `
+    ${r.thumbnailUrl ? `<img src="${esc(r.thumbnailUrl)}" alt="${esc(r.title)}">` : (r.emoji||'🍽️')}
+    <button class="modal-close" onclick="window._closeDetail()">✕</button>
+    <div class="modal-source-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+      ${r.authorName ? '@'+esc(r.authorName) : 'Instagram Reel'}
+    </div>`;
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-title">${esc(r.title)}</div>
+    <div class="modal-stats">
+      <div class="stat-item"><div class="stat-value">⏱ ${esc(r.dauer||'?')}</div><div class="stat-label">Dauer</div></div>
+      <div class="stat-item"><div class="stat-value">👤 ${esc(r.portionen||'?')}</div><div class="stat-label">Portionen</div></div>
+      <div class="stat-item"><div class="stat-value">📊 ${esc(r.schwierigkeit||'?')}</div><div class="stat-label">Level</div></div>
+    </div>
+    <div class="section-label">Zutaten</div>
+    <ul class="ingredients-list">${(r.zutaten||[]).map(z=>`<li>${esc(z)}</li>`).join('')}</ul>
+    <div class="section-label">Zubereitung</div>
+    <ol class="steps-list">${(r.schritte||[]).map((s,i)=>`<li><div class="step-num">${i+1}</div><div>${esc(s)}</div></li>`).join('')}</ol>
+    <div class="modal-tags">${(r.tags||[]).map(t=>`<span class="modal-tag">#${esc(t)}</span>`).join('')}</div>
+    <button class="btn-open-reel" onclick="window.open('${esc(r.url||'#')}','_blank')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      Original Reel öffnen
+    </button>`;
+
+  document.getElementById('detailModal').classList.add('open');
+};
+window._closeDetail = () => document.getElementById('detailModal').classList.remove('open');
+
+// ════════════════════════════════════════════════════
+// ADD MODAL
+// ════════════════════════════════════════════════════
+window._openAdd  = () => document.getElementById('addModal').classList.add('open');
+window._closeAdd = () => {
+  document.getElementById('addModal').classList.remove('open');
+  setAddStatus(null);
+  const btn = document.getElementById('addBtn');
+  btn.disabled=true; btn.textContent='✨ Rezept extrahieren';
+};
+function closeAdd() { window._closeAdd(); }
+
+// ════════════════════════════════════════════════════
+// UI HELPERS
+// ════════════════════════════════════════════════════
+function showLoginScreen() {
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('appScreen').style.display='none';
+}
+function showApp() {
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appScreen').style.display='block';
+}
+function renderUserBadge(user) {
+  document.getElementById('userBadge').innerHTML = `
+    <img src="${user.photoURL||''}" alt=""
+      style="width:28px;height:28px;border-radius:50%;border:2px solid var(--gold);object-fit:cover"
+      onerror="this.style.display='none'">
+    <span style="color:var(--cream);font-size:13px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+      ${esc(user.displayName?.split(' ')[0]||'User')}
+    </span>
+    <button class="btn-icon" onclick="window._signOut()" title="Abmelden" style="width:28px;height:28px;font-size:11px">⏻</button>`;
+}
+function syncDot(state) {
+  const el = document.getElementById('syncDot');
+  el.style.background = state==='ok' ? '#6b7c5a' : state==='sync' ? 'var(--gold)' : 'var(--rust)';
+  el.style.animation  = state==='sync' ? 'pulse 1s infinite' : 'none';
+  el.title = {ok:'Synchronisiert',sync:'Wird synchronisiert…',error:'Sync-Fehler'}[state]||'';
+}
+function setLoading(a) {
+  document.getElementById('loadingBar').classList.toggle('active',a);
+  document.getElementById('loadingText').classList.toggle('active',a);
+  document.getElementById('heroBtn').disabled=a;
+}
+function setBanner(opts) {
+  document.getElementById('heroBanner').innerHTML =
+    opts ? `<div class="status-banner ${opts.type}" style="margin-top:14px">${opts.msg}</div>` : '';
+}
+function setAddStatus(opts) {
+  document.getElementById('addStatus').innerHTML =
+    opts ? `<div class="status-banner ${opts.type}">${opts.msg}</div>` : '';
+}
+
+let _toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>t.classList.remove('show'), 3000);
+}
+window.showToast = toast; // für externe Aufrufe
+
+// ════════════════════════════════════════════════════
+// SHARE TARGET
+// ════════════════════════════════════════════════════
+const p = new URLSearchParams(window.location.search);
+const sharedUrl = p.get('share')||p.get('url')||p.get('text');
+if (sharedUrl && (sharedUrl.includes('instagram.com')||sharedUrl.includes('tiktok.com'))) {
+  document.getElementById('heroUrl').value = sharedUrl;
+  window._heroInput(sharedUrl);
+  toast('🔗 Link erkannt – auf "Holen" tippen!');
+}
+
+// ════════════════════════════════════════════════════
+// SERVICE WORKER
+// ════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+
+</script>
+</body>
+</html>
