@@ -1,0 +1,11 @@
+reelrezepte/
+├── netlify.toml
+├── firestore.rules
+├── firebase.json
+├── netlify/functions/
+│   ├── extract-recipe.js
+│   └── auth.js
+└── public/
+    ├── index.html
+    ├── manifest.json
+    └── sw.js
