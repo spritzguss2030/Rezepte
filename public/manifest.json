@@ -1,1 +1,12 @@
-
+{
+  "name": "ReelRezepte",
+  "short_name": "ReelRezepte",
+  "description": "Speichere Instagram-Rezepte automatisch mit KI",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1208",
+  "theme_color": "#1a1208",
+  "orientation": "portrait",
+  "categories": ["food", "lifestyle"],
+  "lang": "de"
+}
