@@ -196,7 +196,7 @@ window._extractHero = async () => {
   finally    { setLoading(false); }
 };
 
-window._extractModal = async () => {
+const url = inp.value.trim(); if (!url) return;
   if (!currentUser) { closeAdd(); toast('⚠️ Bitte erst einloggen'); return; }
   const inp = document.getElementById('addUrl');
   const url = inp.value.trim(); if (!url) return;
