@@ -1,50 +1,20 @@
-# ═══════════════════════════════════════════════════════════
-# ReelRezepte – netlify.toml
-# Ablage: Projektwurzel (neben index.html)
-# ═══════════════════════════════════════════════════════════
-
 [build]
-  publish = "public"          # Ordner mit index.html + manifest.json
+  publish = "public"
   functions = "netlify/functions"
 
-# ── Node-Version für Functions ──
 [functions]
   node_bundler = "esbuild"
 
 [functions."extract-recipe"]
-  timeout = 30                # Claude API kann etwas brauchen
+  timeout = 30
 
-# ── API-Route: /api/extract → Function ──
 [[redirects]]
   from = "/api/extract"
   to = "/.netlify/functions/extract-recipe"
   status = 200
 
-# ── SPA-Fallback (falls du später Routing einbaust) ──
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-# ── Security & PWA Headers ──
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-
-[[headers]]
-  for = "/manifest.json"
-  [headers.values]
-    Content-Type = "application/manifest+json"
-    Cache-Control = "public, max-age=86400"
-
-[[headers]]
-  for = "/sw.js"
-  [headers.values]
-    Cache-Control = "no-cache"
-
-# ── ENV-Variablen (nur Hinweis – echte Werte im Netlify Dashboard!) ──
-# ANTHROPIC_API_KEY = "sk-ant-..."   ← NIEMALS hier eintragen!
+  force = true
