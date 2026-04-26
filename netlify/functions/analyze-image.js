@@ -57,8 +57,13 @@ Falls keine FremdwÃ¶rter: []`,
     if (!res.ok) throw new Error(data.error?.message || `API Fehler ${res.status}`);
 
     const raw = data.content?.[0]?.text || '[]';
-    const clean = raw.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
-    const words = JSON.parse(clean);
+    let clean = raw.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+    // Nur den JSON-Array extrahieren
+    const match = clean.match(/\[[\s\S]*\]/);
+    clean = match ? match[0] : '[]';
+    let words;
+    try { words = JSON.parse(clean); }
+    catch { words = []; }
 
     return { statusCode: 200, headers, body: JSON.stringify({ words }) };
 
