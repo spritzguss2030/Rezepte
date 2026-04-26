@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f0e0c">
+<title>Lexikon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Josefin+Sans:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0f0e0c;
+  --surface:  #1a1814;
+  --border:   rgba(255,255,255,0.07);
+  --gold:     #c9a84c;
+  --gold-dim: #7a6230;
+  --cream:    #f0ead8;
+  --muted:    rgba(240,234,216,0.4);
+  --radius:   12px;
+  --serif:    'Cormorant Garamond', Georgia, serif;
+  --sans:     'Josefin Sans', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--cream);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Subtle noise texture */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9999; opacity: 0.5;
+}
+
+/* ── HEADER ── */
+header {
+  padding: 24px 24px 0;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  background: linear-gradient(var(--bg) 80%, transparent);
+  padding-bottom: 16px;
+}
+
+.wordmark {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.wordmark span {
+  display: block;
+  font-size: 28px;
+  letter-spacing: 0.1em;
+  color: var(--cream);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.header-right { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
+
+.btn-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface); color: var(--muted);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all .2s; font-size: 14px;
+}
+.btn-icon:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+/* ── UPLOAD ZONE ── */
+.upload-zone {
+  margin: 24px 20px 0;
+  border: 1px dashed var(--gold-dim);
+  border-radius: var(--radius);
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .3s;
+  position: relative;
+  overflow: hidden;
+  background: rgba(201,168,76,0.03);
+}
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.07);
+}
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.upload-icon { font-size: 32px; margin-bottom: 10px; opacity: 0.7; }
+.upload-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-style: italic;
+  color: var(--cream);
+  margin-bottom: 6px;
+}
+.upload-sub { font-size: 11px; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; }
+
+/* Preview */
+.preview-img {
+  width: 100%; max-height: 200px; object-fit: contain;
+  border-radius: 8px; margin-bottom: 16px; display: none;
+}
+
+/* ── EXTRACT BTN ── */
+.btn-extract {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: calc(100% - 40px); margin: 16px 20px 0;
+  padding: 15px; border-radius: var(--radius);
+  border: 1px solid var(--gold-dim);
+  background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));
+  color: var(--gold); font-family: var(--sans);
+  font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase;
+  cursor: pointer; transition: all .2s;
+}
+.btn-extract:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(201,168,76,0.25), rgba(201,168,76,0.1));
+  border-color: var(--gold);
+}
+.btn-extract:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── LOADING ── */
+.loading-line {
+  height: 1px; margin: 16px 20px 0;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  background-size: 200% 100%;
+  animation: scanline 1.5s linear infinite;
+  display: none;
+}
+.loading-line.active { display: block; }
+@keyframes scanline { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+.loading-label {
+  text-align: center; font-size: 11px; letter-spacing: 0.15em;
+  color: var(--gold-dim); margin-top: 8px; display: none;
+  text-transform: uppercase;
+}
+.loading-label.active { display: block; }
+
+/* ── STATUS ── */
+.status-msg {
+  margin: 12px 20px 0; padding: 10px 14px;
+  border-radius: 8px; font-size: 12px; letter-spacing: 0.05em;
+  border: 1px solid; display: none;
+}
+.status-msg.show { display: block; }
+.status-msg.error { border-color: rgba(180,60,60,.4); color: #e08080; background: rgba(180,60,60,.08); }
+.status-msg.success { border-color: rgba(107,140,90,.4); color: #a8c490; background: rgba(107,140,90,.08); }
+
+/* ── SEARCH ── */
+.search-wrap {
+  margin: 28px 20px 0;
+  position: relative;
+}
+.search-input {
+  width: 100%; padding: 12px 16px 12px 40px;
+  border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--surface); color: var(--cream);
+  font-family: var(--sans); font-size: 13px; letter-spacing: 0.05em;
+  outline: none; transition: border-color .2s;
+}
+.search-input::placeholder { color: var(--muted); }
+.search-input:focus { border-color: var(--gold-dim); }
+.search-icon {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  color: var(--muted); font-size: 14px; pointer-events: none;
+}
+
+/* ── FILTER CHIPS ── */
+.filter-bar {
+  display: flex; gap: 8px; padding: 16px 20px 0;
+  overflow-x: auto; scrollbar-width: none;
+}
+.filter-bar::-webkit-scrollbar { display: none; }
+.chip {
+  padding: 5px 14px; border-radius: 20px; white-space: nowrap;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); font-family: var(--sans);
+  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  cursor: pointer; transition: all .2s;
+}
+.chip.active, .chip:hover {
+  border-color: var(--gold-dim); color: var(--gold);
+  background: rgba(201,168,76,0.07);
+}
+
+/* ── SECTION ── */
+.section-header {
+  padding: 24px 20px 8px;
+  display: flex; align-items: baseline; justify-content: space-between;
+}
+.section-title {
+  font-family: var(--serif); font-size: 13px;
+  letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--gold); font-weight: 300;
+}
+.section-count { font-size: 10px; letter-spacing: 0.1em; color: var(--muted); }
+
+/* ── WORD LIST ── */
+.word-list { padding: 0 20px; }
+
+.word-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  margin-bottom: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .2s, transform .2s;
+  animation: fadeUp .4s ease both;
+}
+.word-card:hover { border-color: var(--gold-dim); transform: translateX(4px); }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+.card-header {
+  padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.word-main { display: flex; align-items: baseline; gap: 10px; }
+
+.word-term {
+  font-family: var(--serif);
+  font-size: 22px; font-style: italic;
+  color: var(--cream); line-height: 1;
+}
+.word-phonetic {
+  font-size: 10px; letter-spacing: 0.05em;
+  color: var(--muted); font-style: normal;
+}
+.word-rubrik {
+  font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--gold-dim); border: 1px solid var(--gold-dim);
+  padding: 2px 8px; border-radius: 10px; flex-shrink: 0;
+}
+
+.card-definition {
+  padding: 0 16px 14px;
+  font-size: 13px; line-height: 1.6;
+  color: rgba(240,234,216,0.7);
+  display: none;
+}
+.card-definition.open { display: block; }
+
+.card-origin {
+  font-family: var(--serif); font-style: italic;
+  font-size: 13px; color: var(--gold-dim);
+  margin-bottom: 8px;
+}
+
+.card-example {
+  font-size: 12px; color: var(--muted);
+  border-left: 2px solid var(--gold-dim);
+  padding-left: 10px; margin-top: 8px;
+  font-style: italic;
+}
+
+.card-web {
+  margin-top: 10px; padding: 10px;
+  background: rgba(255,255,255,.03);
+  border-radius: 8px; font-size: 11px;
+  color: var(--muted); line-height: 1.5;
+  letter-spacing: 0.02em;
+}
+.card-web-title {
+  font-size: 10px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--gold-dim);
+  margin-bottom: 4px;
+}
+
+.card-actions {
+  display: flex; gap: 8px; padding: 0 16px 14px; margin-top: 4px;
+}
+.btn-small {
+  padding: 5px 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); font-family: var(--sans);
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  cursor: pointer; transition: all .2s;
+}
+.btn-small:hover { border-color: var(--gold-dim); color: var(--gold); }
+.btn-small.danger:hover { border-color: rgba(180,60,60,.5); color: #e08080; }
+
+/* ── EMPTY ── */
+.empty {
+  padding: 60px 20px; text-align: center;
+}
+.empty-glyph {
+  font-family: var(--serif); font-size: 72px;
+  color: var(--gold-dim); opacity: 0.3;
+  font-style: italic; margin-bottom: 16px;
+  display: block;
+}
+.empty h3 {
+  font-family: var(--serif); font-size: 22px;
+  font-style: italic; color: var(--cream);
+  font-weight: 300; margin-bottom: 8px;
+}
+.empty p { font-size: 11px; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 32px; left: 50%;
+  transform: translateX(-50%) translateY(60px);
+  background: var(--surface); color: var(--cream);
+  border: 1px solid var(--gold-dim);
+  padding: 11px 20px; border-radius: 24px;
+  font-size: 12px; letter-spacing: 0.08em;
+  z-index: 500; transition: transform .3s;
+  white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,.5);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+main { padding-bottom: 60px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">
+    Persönliches
+    <span>Lexikon</span>
+  </div>
+  <div class="header-right">
+    <button class="btn-icon" onclick="toggleSearch()" title="Suchen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <!-- UPLOAD -->
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" accept="image/*" id="fileInput" onchange="onFileSelect(event)">
+    <img class="preview-img" id="previewImg" alt="Vorschau">
+    <div class="upload-icon" id="uploadIcon">📷</div>
+    <div class="upload-title" id="uploadTitle">Screenshot hochladen</div>
+    <div class="upload-sub" id="uploadSub">Buch · Artikel · Website · Untertitel</div>
+  </div>
+
+  <button class="btn-extract" id="extractBtn" onclick="extractWords()" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    Fremdwörter extrahieren
+  </button>
+
+  <div class="loading-line" id="loadingLine"></div>
+  <div class="loading-label" id="loadingLabel">KI analysiert Screenshot…</div>
+  <div class="status-msg" id="statusMsg"></div>
+
+  <!-- SEARCH (versteckt) -->
+  <div class="search-wrap" id="searchWrap" style="display:none">
+    <span class="search-icon">🔍</span>
+    <input type="text" class="search-input" id="searchInput"
+      placeholder="Wort suchen…"
+      oninput="renderList()">
+  </div>
+
+  <!-- FILTER -->
+  <div class="filter-bar" id="filterBar">
+    <button class="chip active" onclick="setFilter('alle', this)">Alle</button>
+    <button class="chip" onclick="setFilter('Medizin', this)">Medizin</button>
+    <button class="chip" onclick="setFilter('Recht', this)">Recht</button>
+    <button class="chip" onclick="setFilter('Philosophie', this)">Philosophie</button>
+    <button class="chip" onclick="setFilter('Wirtschaft', this)">Wirtschaft</button>
+    <button class="chip" onclick="setFilter('Latein', this)">Latein</button>
+    <button class="chip" onclick="setFilter('Griechisch', this)">Griechisch</button>
+    <button class="chip" onclick="setFilter('Allgemein', this)">Allgemein</button>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title">Einträge</div>
+    <div class="section-count" id="wordCount">–</div>
+  </div>
+
+  <div class="word-list" id="wordList"></div>
+  <div class="empty" id="emptyState" style="display:none">
+    <span class="empty-glyph">α</span>
+    <h3>Noch keine Einträge</h3>
+    <p>Screenshot hochladen und KI extrahiert die Fremdwörter</p>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged }
+                           from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, doc, addDoc, getDocs, deleteDoc,
+         onSnapshot, query, orderBy, serverTimestamp }
+                           from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ── Firebase Config ──
+const firebaseConfig = {
+  apiKey:            "AIzaSyBzlt1dqY5128ZYwN8lr1LRaiGLNmk2rYk",
+  authDomain:        "rezepte-a91e2.firebaseapp.com",
+  projectId:         "rezepte-a91e2",
+  storageBucket:     "rezepte-a91e2.firebasestorage.app",
+  messagingSenderId: "498684581573",
+  appId:             "1:498684581573:web:690174538e220314ce82ac"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ── State ──
+let currentUser = null;
+let words       = [];
+let activeFilter = 'alle';
+let selectedFile = null;
+let unsubSnapshot = null;
+let openCardId   = null;
+
+// ── Auth ──
+onAuthStateChanged(auth, user => {
+  currentUser = user;
+  if (user) {
+    startSync(user.uid);
+  } else {
+    signInWithPopup(auth, new GoogleAuthProvider()).catch(console.error);
+  }
+});
+
+// ── Firestore Sync ──
+const wordsCol = uid => collection(db, 'lexikon', uid, 'words');
+
+function startSync(uid) {
+  if (unsubSnapshot) unsubSnapshot();
+  const q = query(wordsCol(uid), orderBy('createdAt', 'desc'));
+  unsubSnapshot = onSnapshot(q, snap => {
+    words = snap.docs.map(d => ({ ...d.data(), _fid: d.id }));
+    words.forEach(w => { if (w.createdAt?.toDate) w.createdAt = w.createdAt.toDate().toISOString(); });
+    renderList();
+  }, err => { console.error(err); });
+}
+
+async function saveWord(word) {
+  if (!currentUser) return;
+  await addDoc(wordsCol(currentUser.uid), {
+    ...word, userId: currentUser.uid, createdAt: serverTimestamp()
+  });
+}
+
+async function deleteWord(fid) {
+  if (!currentUser || !fid) return;
+  await deleteDoc(doc(db, 'lexikon', currentUser.uid, 'words', fid));
+}
+
+// ── File Select ──
+window.onFileSelect = function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  selectedFile = file;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = document.getElementById('previewImg');
+    img.src = ev.target.result;
+    img.style.display = 'block';
+    document.getElementById('uploadIcon').style.display = 'none';
+    document.getElementById('uploadTitle').textContent = file.name;
+    document.getElementById('uploadSub').textContent = 'Bereit zur Analyse';
+    document.getElementById('extractBtn').disabled = false;
+  };
+  reader.readAsDataURL(file);
+};
+
+// ── Drag & Drop ──
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    document.getElementById('fileInput').files = e.dataTransfer.files;
+    window.onFileSelect({ target: { files: [file] } });
+    selectedFile = file;
+  }
+});
+
+// ── Extract ──
+window.extractWords = async function() {
+  if (!selectedFile || !currentUser) return;
+
+  setLoading(true);
+  setStatus(null);
+
+  try {
+    // Bild zu Base64
+    const base64 = await fileToBase64(selectedFile);
+    const mediaType = selectedFile.type || 'image/jpeg';
+
+    // Claude API – Bild analysieren
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `Du bist ein Lexikon-Assistent. Analysiere das Bild und extrahiere ALLE Fremdwörter, Fachbegriffe oder ungewöhnlichen Wörter die du erkennst.
+
+Antworte NUR mit einem JSON-Array. Kein Markdown, keine Erklärungen.
+
+Format:
+[
+  {
+    "wort": "das Fremdwort",
+    "aussprache": "phonetische Umschrift falls bekannt",
+    "rubrik": "Medizin|Recht|Philosophie|Wirtschaft|Latein|Griechisch|Allgemein",
+    "definition": "klare, verständliche Definition auf Deutsch",
+    "herkunft": "Sprachursprung und Wortstamm",
+    "beispiel": "ein Beispielsatz"
+  }
+]
+
+Falls keine Fremdwörter erkennbar: []`,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType, data: base64 }
+            },
+            { type: 'text', text: 'Extrahiere alle Fremdwörter aus diesem Screenshot.' }
+          ]
+        }]
+      })
+    });
+
+    const data = await res.json();
+    const raw  = data.content?.[0]?.text || '[]';
+    const clean = raw.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+    const extracted = JSON.parse(clean);
+
+    if (!extracted.length) {
+      setStatus({ type: 'error', msg: 'Keine Fremdwörter gefunden. Anderes Bild versuchen?' });
+      return;
+    }
+
+    // Alle speichern
+    let saved = 0;
+    for (const w of extracted) {
+      // Duplikat prüfen
+      const exists = words.some(x => x.wort?.toLowerCase() === w.wort?.toLowerCase());
+      if (!exists) {
+        await saveWord({ ...w, id: Date.now() + Math.random() });
+        saved++;
+      }
+    }
+
+    setStatus({ type: 'success', msg: `✓ ${saved} neue Einträge gespeichert (${extracted.length - saved} bereits vorhanden)` });
+    resetUpload();
+    toast(`${saved} Wörter ins Lexikon aufgenommen`);
+
+  } catch(err) {
+    console.error(err);
+    setStatus({ type: 'error', msg: `Fehler: ${err.message}` });
+  } finally {
+    setLoading(false);
+  }
+};
+
+window.deleteEntry = async function(fid, ev) {
+  ev.stopPropagation();
+  if (!confirm('Eintrag löschen?')) return;
+  await deleteWord(fid);
+  toast('Gelöscht');
+};
+
+// ── Render ──
+function getFiltered() {
+  const q = document.getElementById('searchInput')?.value.toLowerCase() || '';
+  return words.filter(w => {
+    const matchFilter = activeFilter === 'alle' || w.rubrik === activeFilter;
+    const matchSearch = !q || w.wort?.toLowerCase().includes(q) || w.definition?.toLowerCase().includes(q);
+    return matchFilter && matchSearch;
+  });
+}
+
+function renderList() {
+  const list  = document.getElementById('wordList');
+  const empty = document.getElementById('emptyState');
+  const count = document.getElementById('wordCount');
+  const filtered = getFiltered();
+
+  count.textContent = filtered.length + ' Eintr' + (filtered.length !== 1 ? 'äge' : 'ag');
+
+  if (!filtered.length) {
+    list.innerHTML = ''; empty.style.display = 'block'; return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = filtered.map((w, i) => {
+    const isOpen = openCardId === (w._fid || w.id);
+    return `
+    <div class="word-card" onclick="toggleCard('${w._fid||w.id}')" style="animation-delay:${i*.04}s">
+      <div class="card-header">
+        <div class="word-main">
+          <div class="word-term">${esc(w.wort)}</div>
+          ${w.aussprache ? `<div class="word-phonetic">[${esc(w.aussprache)}]</div>` : ''}
+        </div>
+        <div class="word-rubrik">${esc(w.rubrik||'Allgemein')}</div>
+      </div>
+      <div class="card-definition ${isOpen?'open':''}">
+        ${w.herkunft ? `<div class="card-origin">↳ ${esc(w.herkunft)}</div>` : ''}
+        <div>${esc(w.definition)}</div>
+        ${w.beispiel ? `<div class="card-example">${esc(w.beispiel)}</div>` : ''}
+        <div class="card-actions">
+          <button class="btn-small danger" onclick="deleteEntry('${w._fid}', event)">Löschen</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.toggleCard = function(id) {
+  openCardId = openCardId === id ? null : id;
+  renderList();
+};
+
+window.setFilter = function(cat, btn) {
+  activeFilter = cat;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderList();
+};
+
+let searchVisible = false;
+window.toggleSearch = function() {
+  searchVisible = !searchVisible;
+  document.getElementById('searchWrap').style.display = searchVisible ? 'block' : 'none';
+  if (searchVisible) setTimeout(() => document.getElementById('searchInput').focus(), 100);
+};
+
+// ── Helpers ──
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function setLoading(active) {
+  document.getElementById('loadingLine').classList.toggle('active', active);
+  document.getElementById('loadingLabel').classList.toggle('active', active);
+  document.getElementById('extractBtn').disabled = active;
+}
+
+function setStatus(opts) {
+  const el = document.getElementById('statusMsg');
+  if (!opts) { el.className = 'status-msg'; return; }
+  el.className = `status-msg ${opts.type} show`;
+  el.textContent = opts.msg;
+}
+
+function resetUpload() {
+  selectedFile = null;
+  document.getElementById('previewImg').style.display = 'none';
+  document.getElementById('uploadIcon').style.display = 'block';
+  document.getElementById('uploadTitle').textContent = 'Screenshot hochladen';
+  document.getElementById('uploadSub').textContent = 'Buch · Artikel · Website · Untertitel';
+  document.getElementById('extractBtn').disabled = true;
+  document.getElementById('fileInput').value = '';
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let _tt;
+window.toast = function(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_tt); _tt = setTimeout(() => t.classList.remove('show'), 3000);
+};
+
+</script>
+</body>
+</html>
